@@ -1,4 +1,4 @@
-#' Creates a customizable PRISM-like bar graph. Currently, error bars and significant bars only work if you want ggplot to graph a stat summary.
+#' Creates a customizable PRISM-like bar graph. Currently, error bars and significant bars only work if you want ggplot to graph a stat summary. Imports: ggplot2, ggsignif, ggprism
 #'
 #' @param df The data frame placed into ggplot.
 #' @param x_variable The independent variable. The bar labels. Written as a string name of a column.
@@ -30,6 +30,7 @@
 #' @param margins Edits the margins around the graph. Enter as margin\(top, right, bottom, left, unit\). Example: margin\(0,0,0,0, "cm"\).
 #' @param y_axis_limits Changes the limits of the y-axis. Write as c(min, max).
 #' @return A PRISM-themed ggplot graph.
+#' @import ggplot2, ggsignif, ggprism
 heller_graph<- function(df,
                         x_variable= "",
                         y_variable= "",
@@ -148,67 +149,51 @@ heller_graph<- function(df,
     #Changes the font size of the labels
     theme(axis.text.x=element_text(size=group_label_size))
   #Sets the y-axis limits
+
+
   #Limits are different depending on if the individual points are graphed or not, since they can be way higher than the statistics
   if (individual_points){
-    #Rounds up the digit to the hundredth decimal place
-    if(max(df[[y_variable]], na.rm=TRUE)<0.1){
+    if(max(df[[y_variable]], na.rm=TRUE)<1){
+      #Function for the scaling factor
+      scale= 10^(ceiling(1- log(max(df[[y_variable]], na.rm=TRUE),  base = 10)))
       #Creates a line at y=0 and bolds it if points go below 0
       if(min(df[[y_variable]], na.rm=TRUE)<0){
-        plot<-plot+coord_cartesian(clip="off", ylim=c(min(df[[y_variable]], na.rm=TRUE),    ceiling(max(df[[y_variable]], na.rm=TRUE)*100)/100))
+        plot<-plot+coord_cartesian(clip="off", ylim=c(min(df[[y_variable]], na.rm=TRUE),    ceiling(max(df[[y_variable]], na.rm=TRUE)*scale)/scale))
         plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
       }
       else{
-        plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(df[[y_variable]], na.rm=TRUE)*100)/100))
+        plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(df[[y_variable]], na.rm=TRUE)*scale)/scale))
       }
     }
-    #Rounds up the digit to the tenth decimal place
-    else if(max(df[[y_variable]], na.rm=TRUE)<1){
-      if(min(df[[y_variable]], na.rm=TRUE)<0){
-        plot<-plot+coord_cartesian(clip="off", ylim=c(min(df[[y_variable]], na.rm=TRUE),    ceiling(max(df[[y_variable]], na.rm=TRUE)*10)/10))
-        plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
-      }
-      else{
-        plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(df[[y_variable]], na.rm=TRUE)*10)/10))
-      }
-    }
-    #Rounds up to the nearest integer
     else{
       if(min(df[[y_variable]], na.rm=TRUE)<0){
-        plot<-plot+coord_cartesian(clip="off", ylim=c(min(df[[y_variable]], na.rm=TRUE), ceiling(max(df[[y_variable]], na.rm=TRUE))))
-        plot<- plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
-      }
+          plot<-plot+coord_cartesian(clip="off", ylim=c(min(df[[y_variable]], na.rm=TRUE),    ceiling(max(df[[y_variable]], na.rm=TRUE))))
+          plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
+        }
       else{
-        plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(df[[y_variable]], na.rm=TRUE))))
+          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(df[[y_variable]], na.rm=TRUE))))
+        }
       }
     }
-  }
-
 
   #Not individual points
   else{
     # Adds the height of the error bars in the y limits
     if (error_bars){
       error_bar_data <-ggplot_build(plot)$data[[2]]
-      if(max(error_bar_data[["ymax"]]) <0.1){
-        if(min(error_bar_data[["ymax"]], na.rm=TRUE)<0){
-          plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(error_bar_data[["ymax"]], na.rm=TRUE))*100)/100,ceiling(max(error_bar_data[["ymax"]], na.rm=TRUE)*100)/100)
-          plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
-
-        }
-
-        else{
-          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling((max(error_bar_data[["ymax"]], na.rm=TRUE)*100)/100)))
-        }
+      if (all(is.na(error_bar_data[["ymax"]]))){
+        error_bar_data<-ggplot_build(plot)$data[[1]]
       }
-
-
-      else if(max(error_bar_data[["ymax"]], na.rm=TRUE)<1){
+      if(max(error_bar_data[["ymax"]]) <1){
+        scale= 10^(ceiling(1- log(max(error_bar_data[["ymax"]], na.rm=TRUE),  base = 10)))
         if(min(error_bar_data[["ymax"]], na.rm=TRUE)<0){
-          plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(error_bar_data[["ymax"]], na.rm=TRUE))*10)/10, ceiling(max(error_bar_data[["ymax"]], na.rm=TRUE)*10)/10)
+          plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(error_bar_data[["ymax"]], na.rm=TRUE))*scale)/scale,ceiling(max(error_bar_data[["ymax"]], na.rm=TRUE)*scale)/scale)
           plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
+
         }
+
         else{
-          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(error_bar_data[["ymax"]], na.rm=TRUE)*10)/10))
+          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling((max(error_bar_data[["ymax"]], na.rm=TRUE)*scale)/scale)))
         }
       }
 
@@ -224,26 +209,16 @@ heller_graph<- function(df,
     }
     else{
       col_data<-ggplot_build(plot)$data[[1]]
-      if(max(col_data[["ymax"]]) <0.1){
+      scale= 10^(ceiling(1- log(max(col_data[["ymax"]], na.rm=TRUE),  base = 10)))
+      if(max(col_data[["ymax"]], na.rm=TRUE) <1){
         if(min(col_data[["ymax"]], na.rm=TRUE)<0){
-          plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(col_data[["ymax"]], na.rm=TRUE))*100)/100,ceiling(max(col_data[["ymax"]], na.rm=TRUE)*100)/100)
+          plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(col_data[["ymax"]], na.rm=TRUE))*scale)/scale,ceiling(max(col_data[["ymax"]], na.rm=TRUE)*scale)/scale)
           plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
 
         }
 
         else{
-          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling((max(col_data[["ymax"]], na.rm=TRUE)*100)/100)))
-        }
-      }
-
-
-      else if(max(col_data[["ymax"]], na.rm=TRUE)<1){
-        if(min(col_data[["ymax"]], na.rm=TRUE)<0){
-          plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(col_data[["ymax"]], na.rm=TRUE))*10)/10, ceiling(max(col_data[["ymax"]], na.rm=TRUE)*10)/10)
-          plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
-        }
-        else{
-          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling(max(col_data[["ymax"]], na.rm=TRUE)*10)/10))
+          plot<-plot+coord_cartesian(clip="off", ylim=c(0, ceiling((max(col_data[["ymax"]], na.rm=TRUE)*scale)/scale)))
         }
       }
 
@@ -257,7 +232,6 @@ heller_graph<- function(df,
         }
       }
     }
-
   }
 
   #Adds minor ticks to the the graph
@@ -301,7 +275,12 @@ heller_graph<- function(df,
   }
   #Changes the y-limits of the graph if user does not like the rounding
   if(!is.null(y_axis_limits)){
-    plot<- plot+coord_cartesian(ylim= y_axis_limits)
+    if (min(y_axis_limits)<0){
+      plot<- plot+coord_cartesian(ylim= y_axis_limits)+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
+    }
+    else{
+      plot<-plot+coord_cartesian(ylim= y_axis_limits)
+    }
   }
 
   return(plot)
