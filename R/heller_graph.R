@@ -184,9 +184,9 @@ heller_graph<- function(df,
       if (all(is.na(error_bar_data[["ymax"]]))){
         error_bar_data<-ggplot_build(plot)$data[[1]]
       }
-      if(max(error_bar_data[["ymax"]]) <1){
+      if(max(error_bar_data[["ymax"]], na.rm=TRUE) <1){
         scale= 10^(ceiling(1- log(max(error_bar_data[["ymax"]], na.rm=TRUE),  base = 10)))
-        if(min(error_bar_data[["ymax"]], na.rm=TRUE)<0){
+        if(min(error_bar_data[["ymin"]], na.rm=TRUE)<0){
           plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(error_bar_data[["ymax"]], na.rm=TRUE))*scale)/scale,ceiling(max(error_bar_data[["ymax"]], na.rm=TRUE)*scale)/scale)
           plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
 
@@ -211,7 +211,7 @@ heller_graph<- function(df,
       col_data<-ggplot_build(plot)$data[[1]]
       scale= 10^(ceiling(1- log(max(col_data[["ymax"]], na.rm=TRUE),  base = 10)))
       if(max(col_data[["ymax"]], na.rm=TRUE) <1){
-        if(min(col_data[["ymax"]], na.rm=TRUE)<0){
+        if(min(col_data[["ymin"]], na.rm=TRUE)<0){
           plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(col_data[["ymax"]], na.rm=TRUE))*scale)/scale,ceiling(max(col_data[["ymax"]], na.rm=TRUE)*scale)/scale)
           plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
 
@@ -223,7 +223,7 @@ heller_graph<- function(df,
       }
 
       else{
-        if(min(col_data[["ymax"]], na.rm=TRUE)<0){
+        if(min(col_data[["ymin"]], na.rm=TRUE)<0){
           plot<-plot+coord_cartesian(clip="off", ylim=c(floor(min(col_data[["ymax"]], na.rm=TRUE)), ceiling(max(col_data[["ymax"]], na.rm=TRUE))))
           plot<-plot+geom_hline(yintercept =0, linetype="solid", color="black", size=1)
         }
